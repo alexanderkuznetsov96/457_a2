@@ -14,6 +14,10 @@ from OpenGL.GLUT import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+# For debugging
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 
 # Globals
 
@@ -81,11 +85,6 @@ def ft1D( signal ):
 # Output is the same.
 
 def forwardFT( image ):
-
-  # YOUR CODE HERE
-  #
-  # You must replace this code with your own, keeping the same function name are parameters.
-  #
   
   F = np.array(image, dtype='complex')
   # Image is f(x,y)
@@ -96,7 +95,6 @@ def forwardFT( image ):
   for x in range(F.shape[0]):
     F[x,:] = ft1D(F[x,:]);  
     
-  #return np.fft.fft2( image )
   return F
 
 
@@ -108,22 +106,21 @@ def forwardFT( image ):
 
 
 def inverseFT( image ):
-
-  # YOUR CODE HERE
-  #
-  # You must replace this code with your own, keeping the same function name are parameters.
   
-  f = np.array(np.conjugate(image))
+  M = f.shape[0]
+  N = f.shape[1]
   # Image is F(u,v)
-  # Treat every row in F(u,v) as 1D signal to compute F(u,y)
+  # Compute ~F(u,v) (~ => conjugate)
+  f = np.array(np.conjugate(image))
+  # Treat every row in ~F(u,v) as 1D signal to compute ~F(u,y)
   for v in range(f.shape[1]):
-    f[:,v] = ft1D(f[:,v]);
-  # Treat every column F(u,y) as 1D signal to compute f(x,y)
+    f[:,v] = ft1D(f[:,v])/N;
+  # Treat every column ~F(u,y) as 1D signal to compute ~f(x,y)
   for u in range(f.shape[0]):
-    f[u,:] = ft1D(f[u,:]);  
+    f[u,:] = ft1D(f[u,:])/M;  
   
-  return f
-  return np.fft.ifft2( image )
+  # Return ~~f(x,y) = f(x,y)
+  return np.conjugate(f)
 
 
 
@@ -139,9 +136,11 @@ def inverseFT( image ):
 
 def multiplyFTs( image, filter ):
 
-  # YOUR CODE HERE
-
-  return image*filter # (this is wrong) 
+  H = np.array(filter)
+  for u in range(filter.shape[0]):
+   for v in range(filter.shape[1]):
+      H[u,v] = filter[u,v]*(-1)**((u+v)%2)
+  return H*image
 
 
 
@@ -770,14 +769,78 @@ def mouseMotion( x, y ):
 # image[y][x] should also be made at image[-y][-x], which is really
 # stored in image[ydim-1-y][xdim-1-x].
 
+mu_x = 0
+mu_y = 0
+stddev = 0
+
 
 def modulatePixels( image, x, y, isFT ):
 
-  # YOUR CODE HERE
+  # global mu_x, mu_y, stddev
+  mu_x = x
+  mu_y = y
+  stddev = radius/2;
+
+  # H = []
+  maxY = image.shape[0]
+  maxX = image.shape[1]
+  
+  # We'll cover most in 3 stddev, no need to loop beyond that
+  for x_i in range(x - 3*stddev, x + 3*stddev):
+  #for m in range(M):
+    for y_i in range(y - 3*stddev, y + 3*stddev):
+    #for n in range(N):
+      # If the pixels is within the euclidian distance R of cursor, apply the gaussian
+      #if( (m - x)**2 + (n - y)**2 <= radius**2):
+        if(x_i >= 0 and x_i < maxX and y_i >= 0 and y_i < maxY):
+          image[y_i,x_i] = image[y_i,x_i] * (1 - 100*Gaussian2D(x_i, y_i, x, y, stddev))
+  
+  # if(editMode == 's'):
+    # H = np.fromfunction(SubtractiveGaussianF, [M, N], dtype = 'float')
+  # elif(editMode == 'a'): 
+    # H = np.fromfunction(AdditiveGaussianF, [M, N], dtype = 'float')
+    
+  # x_a = range(N)
+  # y_a = range(M)
+
+  # hf = plt.figure()
+  # ha = hf.add_subplot(111, projection='3d')
+
+  # X_a, Y_a = np.meshgrid(x_a, y_a)  # `plot_surface` expects `x` and `y` data to be 2D
+  # ha.plot_surface(X_a, Y_a, H)
+
+  # plt.show()
+  #print(H)
+  
+  # old = 0
+  # new = 0
+  
+  # for y in range(M):
+    # for x in range(N):
+      # old = image[y,x]
+      # image[y,x] = int(H[y,x] * image[y,x])
+      # new = image[y,x]
+      # if(new != old):
+        # print('old image %d'  %old)
+        # print('new image %d' %new)
 
   pass
 
+def AdditiveGaussianF(x,y):
 
+  return 1.0 + 0.1*Gaussian2D(x,y)
+
+def SubtractiveGaussianF(x,y):
+
+  return 1.0 - 100*Gaussian2D(x,y)
+
+def Gaussian2D(x, y, mu_x, mu_y, stddev) :
+  
+  #global mu_x, mu_y, stddev
+  
+  normalization = 1/(2*np.pi*stddev**2)
+  exponent = -( (x-mu_x)**2 + (y-mu_y)**2 )/(2*stddev**2)
+  return normalization* np.exp(exponent)
 
 # For an image coordinate, if it's < 0 or >= max, wrap the coorindate
 # around so that it's in the range [0,max-1].  This is useful in the
