@@ -71,7 +71,7 @@ root.withdraw()
 
 
 def ft1D( signal ):
-
+  
   return np.fft.fft( signal )
 
 
@@ -85,8 +85,19 @@ def forwardFT( image ):
   # YOUR CODE HERE
   #
   # You must replace this code with your own, keeping the same function name are parameters.
+  #
   
-  return np.fft.fft2( image )
+  F = np.array(image, dtype='complex')
+  # Image is f(x,y)
+  # Treat every row in f(x,y) as 1D signal to compute F(u,y)
+  for y in range(F.shape[1]):
+    F[:,y] = ft1D(F[:,y]);
+  # Treat every column F(u,y) as 1D signal to compute F(u,v)
+  for x in range(F.shape[0]):
+    F[x,:] = ft1D(F[x,:]);  
+    
+  #return np.fft.fft2( image )
+  return F
 
 
 
@@ -102,6 +113,16 @@ def inverseFT( image ):
   #
   # You must replace this code with your own, keeping the same function name are parameters.
   
+  f = np.array(np.conjugate(image))
+  # Image is F(u,v)
+  # Treat every row in F(u,v) as 1D signal to compute F(u,y)
+  for v in range(f.shape[1]):
+    f[:,v] = ft1D(f[:,v]);
+  # Treat every column F(u,y) as 1D signal to compute f(x,y)
+  for u in range(f.shape[0]):
+    f[u,:] = ft1D(f[u,:]);  
+  
+  return f
   return np.fft.ifft2( image )
 
 
