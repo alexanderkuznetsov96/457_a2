@@ -141,7 +141,7 @@ def multiplyFTs( image, filter ):
 
   # YOUR CODE HERE
 
-  return image # (this is wrong) 
+  return image*filter # (this is wrong) 
 
 
 
