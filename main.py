@@ -107,11 +107,13 @@ def forwardFT( image ):
 
 def inverseFT( image ):
   
-  M = f.shape[0]
-  N = f.shape[1]
   # Image is F(u,v)
   # Compute ~F(u,v) (~ => conjugate)
   f = np.array(np.conjugate(image))
+  
+  M = f.shape[0]
+  N = f.shape[1]
+  
   # Treat every row in ~F(u,v) as 1D signal to compute ~F(u,y)
   for v in range(f.shape[1]):
     f[:,v] = ft1D(f[:,v])/N;
@@ -774,24 +776,46 @@ def mouseMotion( x, y ):
 def modulatePixels( image, x, y, isFT ):
 
   stddev = radius/2;
+  R = 2*stddev
+  Rsq = R**2
 
   maxY = image.shape[0]
   maxX = image.shape[1]
   
-  # We'll cover most in 3 stddev, no need to loop beyond that. This makes our loop very fast.
-  for x_i in range(x - 3*stddev, x + 3*stddev):
-    for y_i in range(y - 3*stddev, y + 3*stddev):
-        if(x_i >= 0 and x_i < maxX and y_i >= 0 and y_i < maxY):
-          image[y_i,x_i] = image[y_i,x_i] * (1 - 10*Gaussian2D(x_i, y_i, x, y, stddev))
+  # We'll cover most in {R = 2 stddev}, no need to loop beyond that. This makes our loop very fast.
+  for x_i in range(x - R, x + R):
+    for y_i in range(y - R, y + R):
+      # Check that pixel is within boundaries of image
+      if(x_i >= 0 and x_i < maxX and y_i >= 0 and y_i < maxY):
+        # Compute distance between pixel we are looking at and cursor click
+        dsq = Distancesq(x_i, y_i, x, y)
+        # If the pixels is within the euclidian distance R (=2*stddev) of cursor, apply the filter
+        if(dsq <= Rsq):
+          factor = GetModulationFactor(dsq, stddev)
+          if(isFT):
+            image[y_i,x_i] = np.exp( np.log(image[y_i,x_i]) * factor )
+            image[maxY - 1 - y_i, maxX - 1 - x_i] = np.exp( np.log(image[maxY - 1 - y_i, maxX - 1 - x_i]) * factor)
+          else:
+            image[y_i,x_i] = image[y_i,x_i] * factor
 
   pass
-
-
-def Gaussian2D(x, y, mu_x, mu_y, stddev) :
+  
+  
+def GetModulationFactor(dsq, stddev):
+  
+  if(editMode == 's'):
+    return 1 - Gaussian2D(dsq, stddev)
     
-  normalization = 1/(2*np.pi*stddev**2)
-  exponent = -( (x-mu_x)**2 + (y-mu_y)**2 )/(2*stddev**2)
-  return normalization* np.exp(exponent)
+  return 1 + 0.1*Gaussian2D(dsq, stddev)
+  
+  
+def Distancesq(x, y, x_0, y_0):
+
+  return (x-x_0)**2 + (y-y_0)**2
+  
+def Gaussian2D(dsq, stddev):
+    
+  return np.exp(-( dsq )/(2*stddev**2))
 
 # For an image coordinate, if it's < 0 or >= max, wrap the coorindate
 # around so that it's in the range [0,max-1].  This is useful in the
