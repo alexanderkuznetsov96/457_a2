@@ -769,75 +769,26 @@ def mouseMotion( x, y ):
 # image[y][x] should also be made at image[-y][-x], which is really
 # stored in image[ydim-1-y][xdim-1-x].
 
-mu_x = 0
-mu_y = 0
-stddev = 0
 
 
 def modulatePixels( image, x, y, isFT ):
 
-  # global mu_x, mu_y, stddev
-  mu_x = x
-  mu_y = y
   stddev = radius/2;
 
-  # H = []
   maxY = image.shape[0]
   maxX = image.shape[1]
   
-  # We'll cover most in 3 stddev, no need to loop beyond that
+  # We'll cover most in 3 stddev, no need to loop beyond that. This makes our loop very fast.
   for x_i in range(x - 3*stddev, x + 3*stddev):
-  #for m in range(M):
     for y_i in range(y - 3*stddev, y + 3*stddev):
-    #for n in range(N):
-      # If the pixels is within the euclidian distance R of cursor, apply the gaussian
-      #if( (m - x)**2 + (n - y)**2 <= radius**2):
         if(x_i >= 0 and x_i < maxX and y_i >= 0 and y_i < maxY):
-          image[y_i,x_i] = image[y_i,x_i] * (1 - 100*Gaussian2D(x_i, y_i, x, y, stddev))
-  
-  # if(editMode == 's'):
-    # H = np.fromfunction(SubtractiveGaussianF, [M, N], dtype = 'float')
-  # elif(editMode == 'a'): 
-    # H = np.fromfunction(AdditiveGaussianF, [M, N], dtype = 'float')
-    
-  # x_a = range(N)
-  # y_a = range(M)
-
-  # hf = plt.figure()
-  # ha = hf.add_subplot(111, projection='3d')
-
-  # X_a, Y_a = np.meshgrid(x_a, y_a)  # `plot_surface` expects `x` and `y` data to be 2D
-  # ha.plot_surface(X_a, Y_a, H)
-
-  # plt.show()
-  #print(H)
-  
-  # old = 0
-  # new = 0
-  
-  # for y in range(M):
-    # for x in range(N):
-      # old = image[y,x]
-      # image[y,x] = int(H[y,x] * image[y,x])
-      # new = image[y,x]
-      # if(new != old):
-        # print('old image %d'  %old)
-        # print('new image %d' %new)
+          image[y_i,x_i] = image[y_i,x_i] * (1 - 10*Gaussian2D(x_i, y_i, x, y, stddev))
 
   pass
 
-def AdditiveGaussianF(x,y):
-
-  return 1.0 + 0.1*Gaussian2D(x,y)
-
-def SubtractiveGaussianF(x,y):
-
-  return 1.0 - 100*Gaussian2D(x,y)
 
 def Gaussian2D(x, y, mu_x, mu_y, stddev) :
-  
-  #global mu_x, mu_y, stddev
-  
+    
   normalization = 1/(2*np.pi*stddev**2)
   exponent = -( (x-mu_x)**2 + (y-mu_y)**2 )/(2*stddev**2)
   return normalization* np.exp(exponent)
