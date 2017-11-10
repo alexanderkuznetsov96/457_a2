@@ -14,6 +14,10 @@ from OpenGL.GLUT import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+# For debugging
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 
 # Globals
 
@@ -81,11 +85,6 @@ def ft1D( signal ):
 # Output is the same.
 
 def forwardFT( image ):
-
-  # YOUR CODE HERE
-  #
-  # You must replace this code with your own, keeping the same function name are parameters.
-  #
   
   F = np.array(image, dtype='complex')
   # Image is f(x,y)
@@ -96,7 +95,6 @@ def forwardFT( image ):
   for x in range(F.shape[0]):
     F[x,:] = ft1D(F[x,:]);  
     
-  #return np.fft.fft2( image )
   return F
 
 
@@ -108,22 +106,23 @@ def forwardFT( image ):
 
 
 def inverseFT( image ):
-
-  # YOUR CODE HERE
-  #
-  # You must replace this code with your own, keeping the same function name are parameters.
   
-  f = np.array(np.conjugate(image))
   # Image is F(u,v)
-  # Treat every row in F(u,v) as 1D signal to compute F(u,y)
-  for v in range(f.shape[1]):
-    f[:,v] = ft1D(f[:,v]);
-  # Treat every column F(u,y) as 1D signal to compute f(x,y)
-  for u in range(f.shape[0]):
-    f[u,:] = ft1D(f[u,:]);  
+  # Compute ~F(u,v) (~ => conjugate)
+  f = np.array(np.conjugate(image))
   
-  return f
-  return np.fft.ifft2( image )
+  M = f.shape[0]
+  N = f.shape[1]
+  
+  # Treat every row in ~F(u,v) as 1D signal to compute ~F(u,y)
+  for v in range(f.shape[1]):
+    f[:,v] = ft1D(f[:,v])/N;
+  # Treat every column ~F(u,y) as 1D signal to compute ~f(x,y)
+  for u in range(f.shape[0]):
+    f[u,:] = ft1D(f[u,:])/M;  
+  
+  # Return ~~f(x,y) = f(x,y)
+  return np.conjugate(f)
 
 
 
@@ -139,9 +138,11 @@ def inverseFT( image ):
 
 def multiplyFTs( image, filter ):
 
-  # YOUR CODE HERE
-
-  return image # (this is wrong) 
+  H = np.array(filter)
+  for u in range(filter.shape[0]):
+   for v in range(filter.shape[1]):
+      H[u,v] = filter[u,v]*(-1)**((u+v)%2)
+  return H*image
 
 
 
@@ -771,13 +772,50 @@ def mouseMotion( x, y ):
 # stored in image[ydim-1-y][xdim-1-x].
 
 
+
 def modulatePixels( image, x, y, isFT ):
 
-  # YOUR CODE HERE
+  stddev = radius/2;
+  R = 2*stddev
+  Rsq = R**2
+
+  maxY = image.shape[0]
+  maxX = image.shape[1]
+  
+  # We'll cover most in {R = 2 stddev}, no need to loop beyond that. This makes our loop very fast.
+  for x_i in range(x - R, x + R):
+    for y_i in range(y - R, y + R):
+      # Check that pixel is within boundaries of image
+      if(x_i >= 0 and x_i < maxX and y_i >= 0 and y_i < maxY):
+        # Compute distance between pixel we are looking at and cursor click
+        dsq = Distancesq(x_i, y_i, x, y)
+        # If the pixels is within the euclidian distance R (=2*stddev) of cursor, apply the filter
+        if(dsq <= Rsq):
+          factor = GetModulationFactor(dsq, stddev)
+          if(isFT):
+            image[y_i,x_i] = np.exp( np.log(image[y_i,x_i]) * factor )
+            image[maxY - 1 - y_i, maxX - 1 - x_i] = np.exp( np.log(image[maxY - 1 - y_i, maxX - 1 - x_i]) * factor)
+          else:
+            image[y_i,x_i] = image[y_i,x_i] * factor
 
   pass
+  
+  
+def GetModulationFactor(dsq, stddev):
+  
+  if(editMode == 's'):
+    return 1 - Gaussian2D(dsq, stddev)
+    
+  return 1 + 0.1*Gaussian2D(dsq, stddev)
+  
+  
+def Distancesq(x, y, x_0, y_0):
 
-
+  return (x-x_0)**2 + (y-y_0)**2
+  
+def Gaussian2D(dsq, stddev):
+    
+  return np.exp(-( dsq )/(2*stddev**2))
 
 # For an image coordinate, if it's < 0 or >= max, wrap the coorindate
 # around so that it's in the range [0,max-1].  This is useful in the
