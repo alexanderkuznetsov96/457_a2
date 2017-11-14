@@ -790,24 +790,26 @@ def modulatePixels( image, x, y, isFT ):
   # We'll cover most in {R = 2 stddev}, no need to loop beyond that. This makes our loop very fast.
   for x_i in range(x - R, x + R):
     for y_i in range(y - R, y + R):
-      # Check that pixel is within boundaries of image
-      if(x_i >= 0 and x_i < maxX and y_i >= 0 and y_i < maxY):
-        # Compute distance between pixel we are looking at and cursor click
-        dsq = Distancesq(x_i, y_i, x, y)
-        # If the pixels is within the euclidian distance R (=2*stddev) of cursor, apply the filter
-        if(dsq <= Rsq):
-          factor = GetModulationFactor(dsq, stddev)
-          if(isFT):
-            a = np.real(image[y_i,x_i])
-            b = np.imag(image[y_i,x_i])
-            A = np.sqrt(a*a + b*b)
-            angle = np.arctan2(b,a)
-            A = np.exp( np.log(A + 1) * factor ) - 1
-            newI = A*np.cos(angle) + 1j*A*np.sin(angle)
-            
-            image[y_i,x_i] = newI
-            image[maxY - 1 - y_i, maxX - 1 - x_i] = newI
-          else:
+      # Compute distance between pixel we are looking at and cursor click
+      dsq = Distancesq(x_i, y_i, x, y)
+      # If the pixels is within the euclidian distance R (=2*stddev) of cursor, apply the filter
+      if(dsq <= Rsq):
+        factor = GetModulationFactor(dsq, stddev)
+        if(isFT):
+          x_FT = wrap(x_i, maxX)
+          y_FT = wrap(y_i, maxY)
+          a = np.real(image[y_FT,x_FT])
+          b = np.imag(image[y_FT,x_FT])
+          A = np.sqrt(a*a + b*b)
+          angle = np.arctan2(b,a)
+          A = np.exp( np.log(A + 1) * factor ) - 1
+          newI = A*np.cos(angle) + 1j*A*np.sin(angle)
+        
+          image[y_FT,x_FT] = newI
+          image[maxY - 1 - y_FT, maxX - 1 - x_FT] = newI
+        else:
+          # Check that pixel is within boundaries of image
+          if(x_i >= 0 and x_i < maxX and y_i >= 0 and y_i < maxY):
             image[y_i,x_i] = image[y_i,x_i] * factor
 
   pass
