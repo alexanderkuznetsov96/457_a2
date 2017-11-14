@@ -793,8 +793,15 @@ def modulatePixels( image, x, y, isFT ):
         if(dsq <= Rsq):
           factor = GetModulationFactor(dsq, stddev)
           if(isFT):
-            image[y_i,x_i] = np.exp( np.log(image[y_i,x_i]) * factor )
-            image[maxY - 1 - y_i, maxX - 1 - x_i] = np.exp( np.log(image[maxY - 1 - y_i, maxX - 1 - x_i]) * factor)
+            a = np.real(image[y_i,x_i])
+            b = np.imag(image[y_i,x_i])
+            A = np.sqrt(a*a + b*b)
+            angle = np.arctan2(b,a)
+            A = np.exp( np.log(A + 1) * factor ) - 1
+            newI = A*np.cos(angle) + 1j*A*np.sin(angle)
+            
+            image[y_i,x_i] = newI
+            image[maxY - 1 - y_i, maxX - 1 - x_i] = newI
           else:
             image[y_i,x_i] = image[y_i,x_i] * factor
 
