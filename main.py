@@ -467,7 +467,7 @@ def keyboard( key, x, y ):
     translate = (0,0)
   
   elif key == 'v':
-    outputPath = tkFileDialog.asksaveasfilename( initialdir = '.' ) 
+    outputPath = tkFileDialog.asksaveasfilename( initialdir = '.', defaultextension='.png') 
     if outputPath:
       outputImage( image, outputPath, False, False )
 
