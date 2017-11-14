@@ -465,6 +465,11 @@ def keyboard( key, x, y ):
   elif key == 'z':
     zoom = 1
     translate = (0,0)
+  
+  elif key == 'v':
+    outputPath = tkFileDialog.asksaveasfilename( initialdir = '.' ) 
+    if outputPath:
+      outputImage( image, outputPath, False, False )
 
   else:
     print '''keys:
